@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  bootstrap:
+    image: ethereum/client-go:latest
+    restart: on-failure
+    container_name: bootstrap
+    hostname: bootstrap
+    entrypoint: /root/bootstrap_init.sh
+    command: geth --port 30303 --networkid 1369 --nodiscover --syncmode 'full' --datadir=./node1-datadir --maxpeers=10  -http  -http.api "eth,personal,web3,miner,net,admin,personal,debug" --http.vhosts localhost.local,localhost,127.0.0.1 --http.rpcprefix / -http.port="8545" --http.addr 127.0.0.1 --http.corsdomain "*" --allow-insecure-unlock --mine --miner.threads=1 --miner.etherbase=0x0000000000000000000000000000000000000000 --unlock $WADDR1 --password  pass.txt --verbosity 5 --nat extip:172.26.7.19
+    # command: '--datadir=~/.ethereum/devchain --nodekeyhex=091bd6067cb4612df85d9c1ff85cc47f259ced4d4cd99816b14f35650f59c322 --rpcapi "db,personal,eth,net,web3" --rpccorsdomain="*" --networkid=456719 --rpc --rpcaddr="0.0.0.0"'
+    volumes:
+      - ./files/password:/root/files/password:ro
+      - ./files/genesis.json:/root/files/genesis.json:ro
+      - ./files/keystore:/root/.ethereum/devchain/keystore:rw
+      - /etc/localtime:/etc/localtime:ro
+      - ./scripts/bootstrap_init.sh:/root/bootstrap_init.sh
+    ports:
+      - "30303:30303"
+      - "30303:30303/udp"
+      - "8545:8545"
+  eth:
+    image: ethereum/client-go:latest
+    restart: on-failure
+    links:
+      - bootstrap
+    entrypoint: /root/eth_init.sh
+    volumes:
+      - ./files/password:/root/files/password:ro
+      - ./files/genesis.json:/root/files/genesis.json:ro
+      - ./files/keystore:/root/.ethereum/devchain/keystore:rw
+      - /etc/localtime:/etc/localtime:ro
+      - ./scripts/bootstrap_init.sh:/root/eth_init.sh
+    command: geth --datadir ~/.ethereum/devchain --networkid 1369 --port 30305 --bootnodes "enode://7bea031adf1d26999fa181430e0b40e2e7703c32a7834bfdbf4ca91f94882932d8ddac3aa2b9773bbc68162742a30ef6768cd24db0356bfa0e34c5c5586e9a88@172.26.7.19:30303"
+    # command: '--datadir=~/.ethereum/devchain --rpccorsdomain="*" --networkid=456719 --rpc --bootnodes="enode://288b97262895b1c7ec61cf314c2e2004407d0a5dc77566877aad1f2a36659c8b698f4b56fd06c4a0c0bf007b4cfb3e7122d907da3b005fa90e724441902eb19e@XXX:30303"'
